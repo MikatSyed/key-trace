@@ -1,31 +1,5 @@
 {
-  "mouse_clicks": 98,
-  "key_presses": 23,
-  "activity_log": [
-    {
-      "timestamp": "Nov 1, 2024, 06:43:55 PM",
-      "app_name": "Electron",
-      "window_title": "Activity Tracker Dashboard"
-    },
-    {
-      "timestamp": "Nov 1, 2024, 06:30:05 PM",
-      "app_name": "Electron",
-      "window_title": "Activity Tracker Dashboard"
-    },
-    {
-      "timestamp": "Nov 1, 2024, 05:22:41 PM",
-      "app_name": "Electron",
-      "window_title": "Activity Tracker Dashboard"
-    },
-    {
-      "timestamp": "Nov 1, 2024, 05:22:38 PM",
-      "app_name": "Electron",
-      "window_title": "Activity Tracker Dashboard"
-    },
-    {
-      "timestamp": "Nov 1, 2024, 05:22:38 PM",
-      "app_name": "Electron",
-      "window_title": "Activity Tracker Dashboard"
-    }
-  ]
+  "mouse_clicks": 0,
+  "key_presses": 0,
+  "activity_log": []
 }

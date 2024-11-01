@@ -19,7 +19,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-x: hidden;  /* Prevent horizontal scrolling */
+            overflow-x: hidden;  /* Prevent horizontal scrolling on the body */
         }
 
         h1 {
@@ -122,6 +122,19 @@
             transition: background-color 0.3s;
         }
 
+        /* Chart panel styling */
+        .chart-panel {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            width: 100%; /* Ensure full width for the panel */
+        }
+
+        /* Chart canvas */
+        #activityChart {
+            min-width: 800px; /* Minimum width to allow scrolling */
+        }
+
         /* Hover Effects */
         .button-area:hover {
             background-color: #c3e5d1;
@@ -139,6 +152,7 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
 </head>
 <body>
     <h1>Activity Tracker Dashboard</h1>
@@ -178,23 +192,107 @@
             </table>
             <button id="clear-logs">Clear Logs</button>
         </div>
+
+        <!-- Chart Panel -->
+        <div class="chart-panel panel">
+            <canvas id="activityChart" width="400" height="200"></canvas>
+        </div>
     </div>
 
     <script>
         const { ipcRenderer } = require('electron');
     
-        // Track mouse clicks and key presses, updating only on new events
-        window.addEventListener('click', (event) => {
-            // Ignore clicks on the "Clear Logs" button
-            if (event.target.id !== 'clear-logs') {
-                ipcRenderer.send('mouseClick');
+        // Dynamic data for the chart
+        const mouseClicksData = [];
+        const keyPressesData = [];
+        const labelsData = [];
+        let clickCount = 0;
+        let keyPressCount = 0;
+
+        // Chart.js configuration
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        const activityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsData,
+                datasets: [
+                    {
+                        label: 'Mouse Clicks',
+                        data: mouseClicksData,
+                        backgroundColor: '#2a9d8f',
+                    },
+                    {
+                        label: 'Key Presses',
+                        data: keyPressesData,
+                        backgroundColor: '#e76f51',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, 
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Activity Over Time'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
         });
-    
-        window.addEventListener('keydown', () => {
-            ipcRenderer.send('keyPress');
+
+        // Track mouse clicks and key presses, updating only on new events
+        window.addEventListener('click', (event) => {
+            if (event.target.id !== 'clear-logs') {
+                clickCount++;
+                ipcRenderer.send('mouseClick');
+                updateClickChart(); // Update chart for clicks only
+            }
         });
-    
+
+        window.addEventListener('keydown', () => {
+            keyPressCount++;
+            ipcRenderer.send('keyPress');
+            updateKeyPressChart(); // Update chart for key presses only
+        });
+
+        // Function to update chart data for mouse clicks
+        function updateClickChart() {
+            const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            labelsData.unshift(currentTime);
+            mouseClicksData.unshift(clickCount);
+            keyPressesData.unshift(keyPressCount > 0 ? keyPressesData[0] : 0); // Keep previous key press data
+
+            if (labelsData.length > 10) {
+                labelsData.pop();
+                mouseClicksData.pop();
+                keyPressesData.pop();
+            }
+            activityChart.update();
+        }
+
+        // Function to update chart data for key presses
+        function updateKeyPressChart() {
+            const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            labelsData.unshift(currentTime);
+            keyPressesData.unshift(keyPressCount);
+            mouseClicksData.unshift(mouseClicksData[0] || 0); // Keep previous click data
+
+            if (labelsData.length > 10) {
+                labelsData.pop();
+                mouseClicksData.pop();
+                keyPressesData.pop();
+            }
+            activityChart.update();
+        }
+
         // Update UI with click and key press counts
         ipcRenderer.on('updateCounts', (event, { mouse_clicks, key_presses }) => {
             document.getElementById('mouse-clicks').textContent = mouse_clicks;
@@ -204,7 +302,7 @@
         // Update the activity log in the table
         ipcRenderer.on('updateActivityLog', (event, activityLog) => {
             const logTable = document.getElementById('activity-log');
-            logTable.innerHTML = '';  // Clear the existing table rows
+            logTable.innerHTML = '';  
             activityLog.forEach(entry => {
                 const row = document.createElement('tr');
                 row.innerHTML = `<td>${entry.timestamp}</td><td>${entry.app_name}</td><td>${entry.window_title}</td>`;
@@ -215,6 +313,12 @@
         // Clear logs on button click
         document.getElementById('clear-logs').addEventListener('click', () => {
             ipcRenderer.send('clearLogs');
+            clickCount = 0;
+            keyPressCount = 0;
+            mouseClicksData.length = 0; 
+            keyPressesData.length = 0;
+            labelsData.length = 0; 
+            activityChart.update(); 
         });
     </script>
 </body>
