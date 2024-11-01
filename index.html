@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker Dashboard</title>
+    <style>
+        /* General page styling */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;  /* Prevent horizontal scrolling */
+        }
+
+        h1 {
+            font-size: 2em;
+            color: #2a9d8f;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Dashboard layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .panel {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .panel h2 {
+            font-size: 1.5em;
+            color: #264653;
+            margin: 0;
+        }
+
+        .panel .count {
+            font-size: 2.5em;
+            color: #2a9d8f;
+            margin: 10px 0;
+        }
+
+        .activity-log {
+            grid-column: 1 / -1;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #e9ecef;
+            color: #333;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #e76f51;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        /* Button area styling */
+        .button-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px;
+            margin-top: 20px;
+            border: 1px dashed #2a9d8f;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 100%; 
+            background-color: #e0f7e9;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            overflow: hidden;  
+        }
+
+        .button {
+            padding: 10px 20px;
+            background-color: #2a9d8f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        /* Hover Effects */
+        .button-area:hover {
+            background-color: #c3e5d1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #d64532;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Activity Tracker Dashboard</h1>
+    
+    <div class="dashboard">
+        <!-- Mouse Clicks Panel -->
+        <div class="panel">
+            <h2>Mouse Clicks</h2>
+            <div class="count" id="mouse-clicks">0</div>
+        </div>
+
+        <!-- Key Presses Panel -->
+        <div class="panel">
+            <h2>Key Presses</h2>
+            <div class="count" id="key-presses">0</div>
+        </div>
+
+        <!-- Clickable Button Area -->
+        <div class="activity-log">
+            <div class="button-area">
+                <div class="button">Click</div>
+            </div>
+        </div>
+
+        <!-- Activity Log Panel -->
+        <div class="panel activity-log">
+            <h2>Recent Activity</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Application</th>
+                        <th>Window Title / URL</th>
+                    </tr>
+                </thead>
+                <tbody id="activity-log"></tbody>
+            </table>
+            <button id="clear-logs">Clear Logs</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+    
+        // Track mouse clicks and key presses, updating only on new events
+        window.addEventListener('click', (event) => {
+            // Ignore clicks on the "Clear Logs" button
+            if (event.target.id !== 'clear-logs') {
+                ipcRenderer.send('mouseClick');
+            }
+        });
+    
+        window.addEventListener('keydown', () => {
+            ipcRenderer.send('keyPress');
+        });
+    
+        // Update UI with click and key press counts
+        ipcRenderer.on('updateCounts', (event, { mouse_clicks, key_presses }) => {
+            document.getElementById('mouse-clicks').textContent = mouse_clicks;
+            document.getElementById('key-presses').textContent = key_presses;
+        });
+    
+        // Update the activity log in the table
+        ipcRenderer.on('updateActivityLog', (event, activityLog) => {
+            const logTable = document.getElementById('activity-log');
+            logTable.innerHTML = '';  // Clear the existing table rows
+            activityLog.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${entry.timestamp}</td><td>${entry.app_name}</td><td>${entry.window_title}</td>`;
+                logTable.appendChild(row);
+            });
+        });
+    
+        // Clear logs on button click
+        document.getElementById('clear-logs').addEventListener('click', () => {
+            ipcRenderer.send('clearLogs');
+        });
+    </script>
+</body>
+</html>
